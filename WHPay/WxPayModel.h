@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface WxPayModel : NSObject
+@interface WXPayModel : NSObject
 
 @property (nonatomic,strong)NSString *appid;
 @property (nonatomic,strong)NSString *noncestr;

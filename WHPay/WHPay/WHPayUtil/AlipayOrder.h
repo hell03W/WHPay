@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface Order : NSObject
+@interface AlipayOrder : NSObject
 
 @property(nonatomic, copy) NSString * partner;
 @property(nonatomic, copy) NSString * seller;
@@ -28,7 +28,13 @@
 @property(nonatomic, copy) NSString * rsaDate;//可选
 @property(nonatomic, copy) NSString * appID;//可选
 
+//如果从服务器获取的, 可以在block中赋值; 如果本地测试,不赋值默认使用宏定义中的 PRIVATE
+@property (nonatomic, strong) NSString *privateKey;// 可选
+
 @property(nonatomic, readonly) NSMutableDictionary * extraParams;
+
+
++ (id)order;
 
 
 @end

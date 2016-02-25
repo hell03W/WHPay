@@ -7,10 +7,11 @@
 //
 
 #import "AppDelegate.h"
-#import <AlipaySDK/AlipaySDK.h>
-#import "WXApi.h"
+#import "WHPayPublicDefine.h"
 
-@interface AppDelegate ()
+extern NSString *WHPayCallBackWeChatNotifition;
+
+@interface AppDelegate () <WXApiDelegate>
 
 @end
 
@@ -20,8 +21,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    //向微信注册，这句必需要有才能在具体的地方实现分享功能。
-    //微信支付也需要 register 这个
+    // 微信支付 和 分享到微信都需要向应用注册
     [WXApi registerApp:@"wxf6682ec08066f0eb" withDescription:@"小蜜蜂客户端"];
     
     return YES;
@@ -44,7 +44,7 @@
             NSLog(@"result = %@",resultDic);
         }];
     }
-    
+
     // 微信支付
     if ([url.host isEqualToString:@"pay"]) {
         return [WXApi handleOpenURL:url delegate:self];
@@ -59,44 +59,11 @@
  */
 - (void)onResp:(id)resp
 {
-    NSString *message;
-    
+    // 微信支付的回调, 发送一个收到回调的通知
     if ([resp isKindOfClass:[PayResp class]]) {
         PayResp *response = (PayResp *)resp;
-        NSLog(@"response.errCoderesponse.errCoderesponse.errCode%d",response.errCode);
         
-        switch (response.errCode) {
-            case WXSuccess:{
-                NSLog(@"successWXPay");
-                NSNotification *notification = [NSNotification notificationWithName:@"orderPay" object:@"success"];
-                [[NSNotificationCenter defaultCenter]postNotification:notification];
-                break;
-            }
-            case WXErrCodeCommon:
-                message = @"发送错误";
-                break;
-                
-            case WXErrCodeUserCancel:
-                message = @"支付已取消";
-                break;
-                
-            case WXErrCodeSentFail:
-                message = @"发送失败";
-                break;
-                
-            case WXErrCodeUnsupport:
-                message = @"微信不支持";
-                break;
-                //                WXErrCodeCommon     = -1,   /**< 普通错误类型    */
-                //                WXErrCodeUserCancel = -2,   /**< 用户点击取消并返回    */
-                //                WXErrCodeSentFail   = -3,   /**< 发送失败    */
-                //                WXErrCodeAuthDeny   = -4,   /**< 授权失败    */
-                //                WXErrCodeUnsupport  = -5,   /**< 微信不支持    */
-            default:{
-                NSLog(@"wxpay");
-                break;
-            }
-        }
+        [[NSNotificationCenter defaultCenter] postNotificationName:WHPayCallBackWeChatNotifition object:[NSNumber numberWithInt:response.errCode]];
     }
 }
 

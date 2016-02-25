@@ -6,9 +6,9 @@
 //  Copyright © 2016年 GET-CC. All rights reserved.
 //
 
-#import "WxPayModel.h"
+#import "WXPayModel.h"
 
-@implementation WxPayModel
+@implementation WXPayModel
 
 - (void)setValue:(id)value forUndefinedKey:(NSString *)key
 {

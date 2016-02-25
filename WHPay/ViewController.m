@@ -10,32 +10,13 @@
 #import "AFNTool.h"
 #import "AssignToObject.h"
 
-#pragma mark - 支付宝导入的库和宏定义
-
-#import <AlipaySDK/AlipaySDK.h>
-#import "Order.h"
-#import "DataSigner.h"
-
-
-#include <ifaddrs.h>
-#include <arpa/inet.h>
-#include <net/if.h>
-
-#define IOS_CELLULAR    @"pdp_ip0"
-#define IOS_WIFI        @"en0"
-#define IP_ADDR_IPv4    @"ipv4"
-#define IP_ADDR_IPv6    @"ipv6"
-#import <CommonCrypto/CommonDigest.h>
-
-
-
-
+#import "WHPay/WHPay.h"
 
 #define kWindowWidth [[UIScreen mainScreen] bounds].size.width
 
-@interface ViewController ()
+@interface ViewController () <UITextFieldDelegate>
 
-@property (nonatomic, strong) WxPayModel *wxPayModel;
+@property (nonatomic, strong) WXPayModel *wxPayModel;
 
 @end
 
@@ -75,6 +56,8 @@
     [self.view addSubview:unionPay];
     unionPay.frame = CGRectMake(20, 200, kWindowWidth-40, 40);
     unionPay.tag = 103;
+    
+
 }
 
 - (UIButton *)getButtonWithTitle:(NSString *)title
@@ -116,93 +99,37 @@
 {
     NSLog(@"f支付宝支付 %.2f 元", money);
     
-    /*
-     *点击获取prodcut实例并初始化订单信息
-     */
-    
-    /*
-     *商户的唯一的parnter和seller。
-     *签约后，支付宝会为每个商户分配一个唯一的 parnter 和 seller。
-     */
-    
-    /*============================================================================*/
-    /*=======================需要填写商户app申请的===================================*/
-    /*============================================================================*/
-    NSString *partner = PARTNER;
-    NSString *seller = SELLER;
-    NSString *privateKey = PRIVATE;
-    /*============================================================================*/
-    /*============================================================================*/
-    /*============================================================================*/
-    
-    //partner和seller获取失败,提示
-    if ([partner length] == 0 ||
-        [seller length] == 0 ||
-        [privateKey length] == 0)
-    {
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"提示"
-                                                        message:@"缺少partner或者seller或者私钥。"
-                                                       delegate:self
-                                              cancelButtonTitle:@"确定"
-                                              otherButtonTitles:nil];
-        [alert show];
-        return;
-    }
-    
-    /*
-     *生成订单信息及签名
-     */
-    //将商品信息赋予AlixPayOrder的成员变量
-    Order *order = [[Order alloc] init];
-    order.partner = partner;
-    order.seller = seller;
-    order.tradeNO = [self generateTradeNO]; //订单ID（由商家自行制定）***********
-    order.productName = @"买东西"; //商品标题 ***********
-    order.productDescription = @"测试支付宝支付, 测试支付宝支付"; //商品描述 *******
-    order.amount = [NSString stringWithFormat:@"%.2f",money]; //商品价格 ********
-    order.notifyURL = @"http://180.169.18.71/bee-web/notify_url.jsp"; //回调URL
-    
-    order.service = @"mobile.securitypay.pay";
-    order.paymentType = @"1";
-    order.inputCharset = @"utf-8";
-    order.itBPay = @"30m";
-    order.showUrl = @"m.alipay.com";
-    
-    //应用注册scheme,在AlixPayDemo-Info.plist定义URL types     
-    NSString *appScheme = @"whpay";
-    
-    //将商品信息拼接成字符串
-    NSString *orderSpec = [order description];
-    NSLog(@"orderSpec = %@",orderSpec);
-    
-    //获取私钥并将商户信息签名,外部商户可以根据情况存放私钥和签名,只需要遵循RSA签名规范,并将签名字符串base64编码和UrlEncode
-    id<DataSigner> signer = CreateRSADataSigner(privateKey);
-    NSString *signedString = [signer signString:orderSpec];
-    
-    //将签名成功字符串格式化为订单字符串,请严格按照该格式
-    NSString *orderString = nil;
-    if (signedString != nil) {
-        orderString = [NSString stringWithFormat:@"%@&sign=\"%@\"&sign_type=\"%@\"",
-                       orderSpec, signedString, @"RSA"];
+    [WHPay alipayWithOrder:^(AlipayOrder *order) {
+//**********************************************************************************************
+        order.tradeNO = [WHPayUtil generateTradeNO]; //订单ID（由商家自行制定）***********
+        order.productName = @"买东西"; //商品标题 ***********
+        order.productDescription = @"测试支付宝支付, 测试支付宝支付"; //商品描述 *******
+        order.amount = [NSString stringWithFormat:@"%.2f",money]; //商品价格 ********
         
-        [[AlipaySDK defaultService] payOrder:orderString fromScheme:appScheme callback:^(NSDictionary *resultDic) {
-            NSLog(@"reslut = %@",resultDic);
-        }];
-    }
-    
-    
+        ////////////////////////////////////////////////
+        // 下面四个属性, 默认是从宏定义中读取的, 如果需要是从服务器中获取的, 可以在这里赋值.
+//        order.partner = @"";
+//        order.seller = @"";
+//        order.notifyURL = @""; //回调URL
+//        order.privateKey = @"";
+        
+    } andCallBack:^(WHPayCode payCode) {
+        NSLog(@"alipay call back . payCode = %ld", payCode);
+    }];
 }
 // 微信支付付钱的过程
+// 1. 向自己的服务器请求签名等信息
 - (void)weixinPayMoney:(float)price
 {
 
     NSDictionary *dic = @{@"orderCode" : @"2016000746",
                           @"amount" : [NSString stringWithFormat:@"%f",price],
-                          @"userIP" : [ViewController getIPAddress:YES]};
+                          @"userIP" : [WHPayUtil getIPAddress:YES]};
     [AFNTool requestWithUrlString:@"bee-rest/service/jaxrs/weixin/unify" params:dic success:^(NSDictionary *success) {
         NSLog(@"%@",success);
         if ([success[@"code"] isEqualToString:@"000"]) {
             _wxPayModel = [AssignToObject customObject:@"WxPayModel" fromDictionary:success[@"data"]];
+            [self callWeChatPay:_wxPayModel];
         }else{
             NSString *msg;
             if ([success[@"code"] isEqualToString:@"11780"]) {
@@ -222,162 +149,33 @@
                 return;
             }
         }
-        if (_wxPayModel.prepayid) {
-            // 调起微信支付
-            PayReq *request = [[PayReq alloc]init];
-            request.partnerId = _wxPayModel.partnerid;
-            request.prepayId = _wxPayModel.prepayid;
-            request.package = @"Sign=WXPay";
-            request.nonceStr = _wxPayModel.noncestr;
-            request.timeStamp = [_wxPayModel.timestamp intValue];
-            
-            // 这里要注意key里的值一定要填对， 微信官方给的参数名是错误的，不是第二个字母大写
-            NSMutableDictionary *signParams = [NSMutableDictionary dictionary];
-            [signParams setObject: _wxPayModel.appid               forKey:@"appid"];
-            [signParams setObject: _wxPayModel.partnerid           forKey:@"partnerid"];
-            [signParams setObject: request.nonceStr      forKey:@"noncestr"];
-            [signParams setObject: request.package       forKey:@"package"];
-            [signParams setObject: _wxPayModel.timestamp forKey:@"timestamp"];
-            [signParams setObject: request.prepayId      forKey:@"prepayid"];
-            
-            //生成签名
-            NSString *sign  = [ViewController genSign:signParams];
-            
-            //添加签名
-            request.sign = sign;
-            
-            [WXApi sendReq:request];
-            
-            [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(popToOrderVC) name:@"orderPay" object:nil];
-        }else{
-
-        }
+        
     } failure:^(NSError *error) {
         NSLog(@"%@",error);
     }];
+}
+// 2. 调起微信客户端
+- (void)callWeChatPay:(WXPayModel *)wxPayModel
+{
+    // 调起微信支付
+    [WHPay wechatWithRequest:^(PayReq *request) {
+//**********************************************************************************************
+        // 以下信息是微信支付必须的, 并且需要从服务器获取的
+        request.partnerId = wxPayModel.partnerid; // 商户ID,从服务器获取 ************
+        request.prepayId = wxPayModel.prepayid; // 预支付ID,服务器从微信服务器申请得到的 **************
+        request.nonceStr = wxPayModel.noncestr; // *********
+        request.timeStamp = [wxPayModel.timestamp intValue]; // 时间戳, 从服务器获取 **********
+        request.sign = [WHPayUtil genSignWithPayReq:request appid:wxPayModel.appid]; // sign签名, 服务器获取 ******
+        
+    } andCallBack:^(WHPayCode payCode) {
+        NSLog(@"WeChat call back . payCode = %ld", payCode);
+    }];
+        
 }
 // 苹果支付 去付钱
 - (void)applePayMoney:(float)price
 {
 
-}
-
-- (NSString *)generateTradeNO
-{
-    static int kNumber = 15;
-    
-    NSString *sourceStr = @"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    NSMutableString *resultStr = [[NSMutableString alloc] init];
-    srand((unsigned)time(0));
-    for (int i = 0; i < kNumber; i++)
-    {
-        unsigned index = rand() % [sourceStr length];
-        NSString *oneStr = [sourceStr substringWithRange:NSMakeRange(index, 1)];
-        [resultStr appendString:oneStr];
-    }
-    return resultStr;
-}
-
-
-
-
-#pragma mark - 
-
-+ (NSString *)getIPAddress:(BOOL)preferIPv4
-{
-    NSArray *searchArray = preferIPv4 ?
-    @[ IOS_WIFI @"/" IP_ADDR_IPv4, IOS_WIFI @"/" IP_ADDR_IPv6, IOS_CELLULAR @"/" IP_ADDR_IPv4, IOS_CELLULAR @"/" IP_ADDR_IPv6 ] :
-    @[ IOS_WIFI @"/" IP_ADDR_IPv6, IOS_WIFI @"/" IP_ADDR_IPv4, IOS_CELLULAR @"/" IP_ADDR_IPv6, IOS_CELLULAR @"/" IP_ADDR_IPv4 ] ;
-    
-    NSDictionary *addresses = [self getIPAddresses];
-    //NSLog(@"addresses: %@", addresses);
-    
-    __block NSString *address;
-    [searchArray enumerateObjectsUsingBlock:^(NSString *key, NSUInteger idx, BOOL *stop)
-     {
-         address = addresses[key];
-         if(address) *stop = YES;
-     } ];
-    return address ? address : @"0.0.0.0";
-}
-
-+ (NSDictionary *)getIPAddresses
-{
-    NSMutableDictionary *addresses = [NSMutableDictionary dictionaryWithCapacity:8];
-    
-    // retrieve the current interfaces - returns 0 on success
-    struct ifaddrs *interfaces;
-    if(!getifaddrs(&interfaces)) {
-        // Loop through linked list of interfaces
-        struct ifaddrs *interface;
-        for(interface=interfaces; interface; interface=interface->ifa_next) {
-            if(!(interface->ifa_flags & IFF_UP) || (interface->ifa_flags & IFF_LOOPBACK)) {
-                continue; // deeply nested code harder to read
-            }
-            const struct sockaddr_in *addr = (const struct sockaddr_in*)interface->ifa_addr;
-            if(addr && (addr->sin_family==AF_INET || addr->sin_family==AF_INET6)) {
-                NSString *name = [NSString stringWithUTF8String:interface->ifa_name];
-                char addrBuf[INET6_ADDRSTRLEN];
-                if(inet_ntop(addr->sin_family, &addr->sin_addr, addrBuf, sizeof(addrBuf))) {
-                    NSString *key = [NSString stringWithFormat:@"%@/%@", name, addr->sin_family == AF_INET ? IP_ADDR_IPv4 : IP_ADDR_IPv6];
-                    addresses[key] = [NSString stringWithUTF8String:addrBuf];
-                }
-            }
-        }
-        // Free memory
-        freeifaddrs(interfaces);
-    }
-    
-    // The dictionary keys have the form "interface" "/" "ipv4 or ipv6"
-    return [addresses count] ? addresses : nil;
-}
-
-#pragma mark - 签名
-/** 签名 */
-+ (NSString *)genSign:(NSDictionary *)signParams
-{
-    // 排序, 因为微信规定 ---> 参数名ASCII码从小到大排序
-    NSArray *keys = [signParams allKeys];
-    NSArray *sortedKeys = [keys sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-        return [obj1 compare:obj2 options:NSNumericSearch];
-    }];
-    
-    //生成 ---> 微信规定的签名格式
-    NSMutableString *sign = [NSMutableString string];
-    for (NSString *key in sortedKeys) {
-        [sign appendString:key];
-        [sign appendString:@"="];
-        [sign appendString:[signParams objectForKey:key]];
-        [sign appendString:@"&"];
-    }
-    NSString *signString = [[sign copy] substringWithRange:NSMakeRange(0, sign.length - 1)];
-    
-    // 拼接API密钥
-    //    NSString *result = [NSString stringWithFormat:@"%@&key=%@", signString, WXPartnerKey];
-    NSString *result = [NSString stringWithFormat:@"%@&key=%@",signString,WXPartnerKey];
-    // 打印检查
-    NSLog(@"result = %@", result);
-    // md5加密
-    NSString *signMD5 = [ViewController md5:result];
-    // 微信规定签名英文大写
-    signMD5 = signMD5.uppercaseString;
-    // 打印检查
-    NSLog(@"signMD5 = %@", signMD5);
-    return signMD5;
-}
-
-+ (NSString *)md5:(NSString *)input
-{
-    const char *cStr = [input UTF8String];
-    unsigned char digest[16];
-    CC_MD5( cStr, strlen(cStr), digest ); // This is the md5 call
-    
-    NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
-    
-    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++)
-        [output appendFormat:@"%02x", digest[i]];
-    
-    return  output;
 }
 
 @end

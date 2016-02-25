@@ -6,9 +6,10 @@
 //
 //
 
-#import "Order.h"
+#import "AlipayOrder.h"
+#import "WHPay.h"
 
-@implementation Order
+@implementation AlipayOrder
 
 - (NSString *)description {
 	NSMutableString * discription = [NSMutableString string];
@@ -62,6 +63,24 @@
 		[discription appendFormat:@"&%@=\"%@\"", key, [self.extraParams objectForKey:key]];
 	}
 	return discription;
+}
+
++ (id)order
+{
+    AlipayOrder *order = [[AlipayOrder alloc] init];
+    
+    order.partner = PARTNER;
+    order.seller = SELLER;
+    order.notifyURL = AlipayNotifyURL; //回调URL
+    order.privateKey = PRIVATE;
+    
+    order.service = @"mobile.securitypay.pay";
+    order.paymentType = @"1";
+    order.inputCharset = @"utf-8";
+    order.itBPay = @"30m";
+    order.showUrl = @"m.alipay.com";
+    
+    return order;
 }
 
 
