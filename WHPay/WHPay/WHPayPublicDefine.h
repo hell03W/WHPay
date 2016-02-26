@@ -68,7 +68,8 @@
 
 #pragma mark - 全局变量, 通知类型
 
-NSString *WHPayCallBackWeChatNotifition;
+extern NSString *WHPayCallBackWeChatNotifition; // 微信回调的通知
+extern NSString *WHPayCallBackAlipayNotifition; // 支付宝回调通知
 
 
 

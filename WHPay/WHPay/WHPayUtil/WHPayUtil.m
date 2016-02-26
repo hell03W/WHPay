@@ -73,7 +73,7 @@
     for (NSString *key in sortedKeys) {
         [sign appendString:key];
         [sign appendString:@"="];
-        [sign appendString:[signParams objectForKey:key]];
+        [sign appendString:[NSString stringWithFormat:@"%@", [signParams objectForKey:key]]];
         [sign appendString:@"&"];
     }
     NSString *signString = [[sign copy] substringWithRange:NSMakeRange(0, sign.length - 1)];

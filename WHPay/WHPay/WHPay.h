@@ -9,10 +9,12 @@
 #import <Foundation/Foundation.h>
 #import "WHPayPublicDefine.h"
 
+
 typedef enum : NSUInteger {
     WHPayCodeSuccess,
     WHPayCodeFailure,
     WHPayCodeCancle,
+    WHPayCodeOtherReason,
 } WHPayCode;
 
 typedef void (^AlipayOrderBlock)(AlipayOrder *order);

@@ -63,7 +63,7 @@ extern NSString *WHPayCallBackWeChatNotifition;
     if ([resp isKindOfClass:[PayResp class]]) {
         PayResp *response = (PayResp *)resp;
         
-        [[NSNotificationCenter defaultCenter] postNotificationName:WHPayCallBackWeChatNotifition object:[NSNumber numberWithInt:response.errCode]];
+        [[NSNotificationCenter defaultCenter] postNotificationName:WHPayCallBackWeChatNotifition object:nil userInfo:@{@"errCode": [NSNumber numberWithInt:response.errCode]}];
     }
 }
 

@@ -122,13 +122,13 @@
 - (void)weixinPayMoney:(float)price
 {
 
-    NSDictionary *dic = @{@"orderCode" : @"2016000746",
+    NSDictionary *dic = @{@"orderCode" : @"2016000763",
                           @"amount" : [NSString stringWithFormat:@"%f",price],
                           @"userIP" : [WHPayUtil getIPAddress:YES]};
     [AFNTool requestWithUrlString:@"bee-rest/service/jaxrs/weixin/unify" params:dic success:^(NSDictionary *success) {
         NSLog(@"%@",success);
         if ([success[@"code"] isEqualToString:@"000"]) {
-            _wxPayModel = [AssignToObject customObject:@"WxPayModel" fromDictionary:success[@"data"]];
+            _wxPayModel = [AssignToObject customObject:@"WXPayModel" fromDictionary:success[@"data"]];
             [self callWeChatPay:_wxPayModel];
         }else{
             NSString *msg;
