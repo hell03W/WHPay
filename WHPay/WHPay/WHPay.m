@@ -128,6 +128,7 @@ static PayCallBack payCallBack;
     // 支付成功或者失败的回调
     if (payCallBack) {
         payCallBack(pCode);
+        payCallBack = nil;
     }
 }
 /*

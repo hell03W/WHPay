@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-#import "WHPayPublicDefine.h"
+#import "WHPay.h"
 
 extern NSString *WHPayCallBackWeChatNotifition;
 
